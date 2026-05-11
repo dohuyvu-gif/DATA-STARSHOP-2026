@@ -5,7 +5,7 @@
 
 // --- CONFIGURATION ---
 const VISION_API_KEY = "YOUR_GOOGLE_CLOUD_VISION_API_KEY"; // Hướng dẫn lấy key ở cuối file
-const SHEET_ID = "1GSSVla9O1KocZpz4A8yaTuX6EUyurxgeiu9ITqptpmE";
+const SHEET_ID = "18AE2uGRNiMLFkhm-MXNFo4nv6thXD7HSLAGW7ay2XFA";
 const FOLDER_GPKD_ID = "1UF2tMEB0v2BjVYyKxFeGIGXrnAOizLbJ";
 const FOLDER_CCCD_ID = "1uJZFafbPZ_WFOF-Dplykp9f9jCWlf0YD";
 
@@ -17,25 +17,16 @@ function doGet() {
 }
 
 /**
- * Kiểm tra Mã DMS trong sheet danh sách thực tế
+ * Kiểm tra Mã DMS trong sheet danh sách (Giả sử có sheet tên 'DMS_LIST' cột A)
+ * Hoặc đơn giản là kiểm tra tính hợp lệ cơ bản nếu chưa có sheet danh sách.
  */
 function validateDMS(dmsCode) {
-  try {
-    const ss = SpreadsheetApp.openById(SHEET_ID);
-    const sheet = ss.getSheetByName('DMS_LIST');
-    if (!sheet) throw new Error("Không tìm thấy sheet 'DMS_LIST'");
-    
-    const data = sheet.getDataRange().getValues();
-    // Giả sử Mã DMS nằm ở cột A (index 0)
-    const exists = data.some(row => row[0].toString().toUpperCase().trim() === dmsCode.toUpperCase().trim());
-    
-    if (exists) {
-      return { success: true };
-    } else {
-      throw new Error("Mã DMS không tồn tại trong danh sách dữ liệu Sheet.");
-    }
-  } catch (error) {
-    throw new Error("Lỗi xác thực: " + error.message);
+  // Thay thế logic này bằng việc tra cứu sheet nếu cần
+  // Ví dụ: return SpreadsheetApp.openById(SHEET_ID).getSheetByName('DMS_LIST').getRange('A:A').getValues().flat().includes(dmsCode);
+  if (dmsCode && dmsCode.length >= 3) {
+    return { success: true };
+  } else {
+    throw new Error("Mã DMS không hợp lệ hoặc không tồn tại.");
   }
 }
 

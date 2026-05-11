@@ -2,14 +2,9 @@ import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
 import { fileURLToPath } from "url";
-import axios from "axios";
-import { parse } from "csv-parse/sync";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-const SHEET_ID = "1GSSVla9O1KocZpz4A8yaTuX6EUyurxgeiu9ITqptpmE";
-const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=DMS_LIST`;
 
 async function startServer() {
   const app = express();
@@ -17,51 +12,14 @@ async function startServer() {
 
   app.use(express.json({ limit: '50mb' }));
 
-  // Function to fetch DMS data from Google Sheets
-  async function getDmsFromSheet() {
-    try {
-      const response = await axios.get(SHEET_URL);
-      const records = parse(response.data, {
-        columns: true,
-        skip_empty_lines: true,
-      });
-      // Giả sử cột A là "Mã DMS" và cột B là "Tên Cửa Hàng" (hoặc tên tương ứng trong file)
-      // Chúng ta sẽ map lại để chuẩn hóa key
-      return records.map((row: any) => {
-        const keys = Object.keys(row);
-        return {
-          code: row[keys[0]]?.toString().toUpperCase().trim() || "",
-          name: row[keys[1]]?.toString().trim() || "Cửa hàng chưa đặt tên"
-        };
-      }).filter((item: any) => item.code !== "");
-    } catch (error) {
-      console.error("Error fetching sheet:", error);
-      return [];
-    }
-  }
-
-  // API: Search DMS Codes (Fetched from Sheet)
-  app.get("/api/search-dms", async (req, res) => {
-    const q = (req.query.q as string || "").toUpperCase();
-    if (q.length < 2) return res.json([]);
-    
-    const dmsList = await getDmsFromSheet();
-    const matches = dmsList.filter((item: any) => 
-      item.code.includes(q) || item.name.toUpperCase().includes(q)
-    );
-    res.json(matches);
-  });
-
   // API: Validate DMS Code
-  app.post("/api/validate-dms", async (req, res) => {
+  app.post("/api/validate-dms", (req, res) => {
     const { dmsCode } = req.body;
-    const dmsList = await getDmsFromSheet();
-    const exists = dmsList.find((item: any) => item.code === dmsCode.toUpperCase());
-    
-    if (exists) {
+    // Simulation: Any code >= 3 chars is valid
+    if (dmsCode && dmsCode.length >= 3) {
       res.json({ success: true });
     } else {
-      res.status(400).json({ success: false, message: "Mã DMS không tồn tại trong danh sách dữ liệu Sheet." });
+      res.status(400).json({ success: false, message: "Mã DMS không hợp lệ hoặc không tồn tại." });
     }
   });
 
