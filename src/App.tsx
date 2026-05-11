@@ -31,44 +31,16 @@ interface ImageData {
 }
 
 export default function App() {
-  const [dmsCode, setDmsCode] = useState("");
-  const [errorMsg, setErrorMsg] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-
-  const handleTiepTuc = async () => {
-    if (!dmsCode.trim()) {
-      setErrorMsg("Vui lòng nhập mã DMS cửa hàng!");
-      return;
-    }
-    setIsLoading(true);
-    setErrorMsg(""); // Xóa thông báo lỗi cũ
-
-    try {
-      const codeToCheck = dmsCode.trim().toUpperCase();
-      const docRef = doc(db, "DMS_Codes", codeToCheck);
-      const docSnap = await getDoc(docRef);
-
-      if (docSnap.exists()) {
-        alert(`Thành công! Mã ${codeToCheck} hợp lệ.`); 
-        // Sau này anh ráp lệnh chuyển sang Bước 2 ở dòng này
-      } else {
-        setErrorMsg(`Từ chối: Mã "${codeToCheck}" không tồn tại.`);
-      }
-    } catch (error) {
-      console.error(error);
-      setErrorMsg("Lỗi kết nối. Vui lòng thử lại.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // 1. KHO LƯU TRỮ TRẠNG THÁI (Đã gộp sạch sẽ, không trùng lặp)
   const [screen, setScreen] = useState<Screen>("auth");
   const [dmsCode, setDmsCode] = useState("");
-  const [suggestions, setSuggestions] = useState<{code: string, name: string}[]>([]);
+  const [errorMsg, setErrorMsg] = useState<string | null>(""); 
+  const [isLoading, setIsLoading] = useState(false);
   const [isDmsVerified, setIsDmsVerified] = useState(false);
+  const [suggestions, setSuggestions] = useState<{code: string, name: string}[]>([]);
+  
   const [empId, setEmpId] = useState("");
   const [images, setImages] = useState<ImageData>({ gpkd: null, cccd: null });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [ocrResults, setOcrResults] = useState<{
     gpkd: { licenseNum: string; businessName: string };
     cccd: { idNum: string; fullName: string };
@@ -77,49 +49,42 @@ export default function App() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [activePhotoType, setActivePhotoType] = useState<keyof ImageData | null>(null);
 
-  // DMS Search logic
-  useEffect(() => {
-    const searchDms = async () => {
-      if (dmsCode.length < 2 || isDmsVerified) {
-        setSuggestions([]);
-        return;
-      }
-      try {
-        const res = await fetch(`/api/search-dms?q=${encodeURIComponent(dmsCode)}`);
-        const data = await res.json();
-        setSuggestions(data);
-      } catch (err) {
-        console.error("Search error", err);
-      }
-    };
+  // 2. RADAR XÁC THỰC MÃ (Kết nối Firebase)
+  const handleTiepTuc = async () => {
+    if (!dmsCode.trim()) {
+      setErrorMsg("Vui lòng nhập mã DMS cửa hàng!");
+      return;
+    }
+    
+    setIsLoading(true);
+    setErrorMsg(null); 
 
-    const timer = setTimeout(searchDms, 300);
-    return () => clearTimeout(timer);
-  }, [dmsCode, isDmsVerified]);
-
-  // Screen 1: Auth Logic
-  const handleAuth = async () => {
-    if (!dmsCode.trim() || !isDmsVerified) return;
-    setLoading(true);
-    setError(null);
     try {
-      const res = await fetch("/api/validate-dms", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dmsCode }),
-      });
-      const data = await res.json();
-      if (data.success) {
+      const codeToCheck = dmsCode.trim().toUpperCase();
+      const docRef = doc(db, "DMS_Codes", codeToCheck);
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        // MÃ HỢP LỆ: Kích hoạt tích xanh và chuyển sang Bước 2
+        setIsDmsVerified(true);
         setScreen("collect");
       } else {
-        setError(data.message);
+        // MÃ SAI: Chặn lại và báo đỏ
         setIsDmsVerified(false);
+        setErrorMsg(`Từ chối: Mã "${codeToCheck}" không tồn tại trong hệ thống.`);
       }
-    } catch (err) {
-      setError("Không thể kết nối đến máy chủ.");
+    } catch (error) {
+      console.error("Firebase Error:", error);
+      setErrorMsg("Lỗi kết nối máy chủ. Vui lòng thử lại.");
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
+  };
+
+  // Cập nhật giá trị khi người dùng gõ
+  const onDmsInputChange = (val: string) => {
+    setDmsCode(val);
+    setIsDmsVerified(false);
   };
 
   const selectDms = (item: {code: string, name: string}) => {
@@ -128,12 +93,7 @@ export default function App() {
     setSuggestions([]);
   };
 
-  const onDmsInputChange = (val: string) => {
-    setDmsCode(val);
-    setIsDmsVerified(false);
-  };
-
-  // Photo Handling
+  // 3. XỬ LÝ HÌNH ẢNH (CAMERA)
   const triggerCamera = (type: keyof ImageData) => {
     setActivePhotoType(type);
     fileInputRef.current?.click();
@@ -149,19 +109,18 @@ export default function App() {
       setImages(prev => ({ ...prev, [activePhotoType]: base64 }));
     };
     reader.readAsDataURL(file);
-    e.target.value = ""; // Clear for next click
+    e.target.value = ""; 
   };
 
   const removeImage = (type: keyof ImageData) => {
     setImages(prev => ({ ...prev, [type]: null }));
   };
 
-  // Final Submission
+  // 4. XỬ LÝ GỬI DỮ LIỆU & OCR AI (Bước cuối)
   const handleSubmit = async () => {
-    setLoading(true);
-    setError(null);
+    setIsLoading(true);
+    setErrorMsg(null);
     try {
-      // 1. Thực hiện OCR thực tế bằng Gemini trên Frontend
       const promptGPKD = "Bạn là chuyên gia OCR. Hãy bóc tách 'Số giấy phép đăng ký kinh doanh' và 'Tên đăng ký kinh doanh' từ ảnh này. Trả về định dạng JSON: {licenseNum: string, businessName: string}. Không thêm text giải thích.";
       const promptCCCD = "Bạn là chuyên gia OCR. Hãy bóc tách 'Số căn cước công dân' (12 số) và 'Họ và tên' từ ảnh này. Trả về định dạng JSON: {idNum: string, fullName: string}. Không thêm text giải thích.";
 
@@ -202,7 +161,7 @@ export default function App() {
         }
       });
 
-      // 2. Gửi lệnh mô phỏng đến server
+      // Giả lập gửi báo cáo (Anh sẽ cấu hình API thực tế sau)
       const res = await fetch("/api/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -223,13 +182,13 @@ export default function App() {
           origin: { y: 0.6 }
         });
       } else {
-        setError(data.message);
+        setErrorMsg(data.message);
       }
     } catch (err) {
-      console.error(err);
-      setError("Lỗi xử lý OCR hoặc gửi dữ liệu. Thử lại sau.");
+      console.error("Submit Error:", err);
+      setErrorMsg("Lỗi xử lý OCR hoặc gửi dữ liệu. Thử lại sau.");
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -557,14 +516,14 @@ export default function App() {
                     </div>
                     <button 
                       onClick={handleSubmit} 
-                      disabled={!isFormValid || loading}
+                      disabled={!isFormValid || isLoading}
                       className={`px-12 py-5 rounded-2xl font-black uppercase tracking-[0.2em] text-sm transition-all active:scale-95 flex items-center gap-3 ${
                         isFormValid && !loading 
                           ? "bg-slate-900 text-white hover:bg-black shadow-2xl shadow-indigo-200" 
                           : "bg-slate-200 text-slate-400 cursor-not-allowed"
                       }`}
                     >
-                      {loading ? <Loader2 className="animate-spin" /> : "Kết thúc & Lưu dữ liệu"}
+                      {isLoading ? <Loader2 className="animate-spin" /> : "Kết thúc & Lưu dữ liệu"}
                     </button>
                   </div>
                 </motion.div>
