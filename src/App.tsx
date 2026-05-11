@@ -37,19 +37,27 @@ export default function App() {
     setLoading(true);
     setError(null);
     try {
+      console.log("Starting auth for DMS:", dmsCode);
       const res = await fetch("/api/validate-dms", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
         body: JSON.stringify({ dmsCode }),
       });
+      
       const data = await res.json();
-      if (data.success) {
+      console.log("Auth response:", data);
+
+      if (res.ok && data.success) {
         setScreen("collect");
       } else {
-        setError(data.message);
+        setError(data.message || "Mã DMS không hợp lệ.");
       }
-    } catch (err) {
-      setError("Không thể kết nối đến máy chủ.");
+    } catch (err: any) {
+      console.error("Fetch error:", err);
+      setError(`Lỗi: ${err.message || "Không thể kết nối đến máy chủ."}`);
     } finally {
       setLoading(false);
     }
