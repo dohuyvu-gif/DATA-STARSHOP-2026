@@ -22,20 +22,17 @@ async function startServer() {
     next();
   });
 
-  // API Router
-  const apiRouter = express.Router();
-
-  // API: Health check
-  apiRouter.get("/health", (req, res) => {
-    res.json({ status: "ok" });
+  // --- API ROUTES ---
+  
+  app.get("/api/health", (req, res) => {
+    console.log("Health check hit");
+    res.json({ status: "ok", time: new Date().toISOString() });
   });
 
-  // API: Validate DMS Code
-  apiRouter.post("/validate-dms", (req, res) => {
+  app.post("/api/validate-dms", (req, res) => {
     const { dmsCode } = req.body;
-    console.log(`-> Validating DMS: "${dmsCode}"`);
+    console.log(`[API] Validate DMS: "${dmsCode}"`);
     
-    // Simulation: Any code >= 3 chars is valid
     if (dmsCode && dmsCode.trim().length >= 3) {
       return res.json({ success: true });
     } else {
@@ -46,16 +43,16 @@ async function startServer() {
     }
   });
 
-  // API: Process Submission
-  apiRouter.post("/submit", async (req, res) => {
+  app.post("/api/submit", async (req, res) => {
     const { dmsCode, employeeId, gpkdBase64, cccdBase64 } = req.body;
-    console.log(`-> Processing submission for DMS: ${dmsCode}`);
+    console.log(`[API] Submit: DMS=${dmsCode}, Emp=${employeeId}`);
     
     if (!dmsCode || !employeeId || !gpkdBase64 || !cccdBase64) {
       return res.status(400).json({ success: false, message: "Thiếu dữ liệu bắt buộc." });
     }
 
     try {
+      // Simulation delay
       await new Promise(resolve => setTimeout(resolve, 2000));
       res.json({ 
         success: true, 
@@ -66,15 +63,15 @@ async function startServer() {
         }
       });
     } catch (error) {
+      console.error("Submit error:", error);
       res.status(500).json({ success: false, message: "Lỗi nội bộ server." });
     }
   });
 
-  app.use("/api", apiRouter);
-
-  // Fallback for API routes not found
-  app.use("/api/*", (req, res) => {
-    res.status(404).json({ error: "API Endpoint not found" });
+  // Catch-all for API that didn't match above
+  app.all("/api/*", (req, res) => {
+    console.warn(`[API] 404 Not Found: ${req.method} ${req.url}`);
+    res.status(404).json({ error: "API Endpoint not found", path: req.url });
   });
 
   // Vite middleware for development
