@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DMS Field Collection</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <style>
+    .loader {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #3498db;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 2s linear infinite;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .hidden { display: none; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen font-sans">
+
+  <!-- Màn hình 1: Xác thực DMS -->
+  <div id="screen1" class="flex items-center justify-center min-h-screen p-4">
+    <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md transform transition-all">
+      <div class="text-center mb-8">
+        <div class="bg-blue-100 text-blue-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+          <i class="fas fa-store text-2xl"></i>
+        </div>
+        <h1 class="text-2xl font-bold text-gray-800">DMS Auth</h1>
+        <p class="text-gray-500 text-sm mt-2">Vui lòng nhập mã DMS để tiếp tục</p>
+      </div>
+
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Mã DMS cửa hàng</label>
+          <input type="text" id="dmsCode" placeholder="Nhập mã DMS..." 
+            class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all">
+        </div>
+        <button onclick="handleDmsAuth()" id="btnContinue"
+          class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2">
+          Tiếp tục <i class="fas fa-arrow-right"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Màn hình 2: Thu thập dữ liệu -->
+  <div id="screen2" class="hidden min-h-screen p-4 flex flex-col items-center">
+    <div class="bg-white p-6 rounded-2xl shadow-lg w-full max-w-md my-8">
+      <div class="flex items-center gap-4 mb-6">
+        <button onclick="showScreen('screen1')" class="text-gray-400 hover:text-gray-600">
+          <i class="fas fa-chevron-left"></i>
+        </button>
+        <h2 class="text-xl font-bold text-gray-800">Thu thập dữ liệu</h2>
+      </div>
+
+      <div class="space-y-6">
+        <!-- Mã nhân viên -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Mã nhân viên *</label>
+          <input type="text" id="empId" placeholder="Nhập mã nhân viên..."
+            class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none">
+        </div>
+
+        <!-- Chụp ảnh GPKD -->
+        <div>
+          <p class="text-sm font-semibold text-gray-600 mb-2">Giấy phép kinh doanh *</p>
+          <div class="relative group">
+            <button onclick="triggerCamera('gpkd')" id="btnGpkd"
+              class="w-full border-2 border-dashed border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-600 py-6 px-4 rounded-2xl transition-all flex flex-col items-center gap-2">
+              <i class="fas fa-camera text-2xl"></i>
+              <span>GIAY_PHEP_KINH_DOANH</span>
+            </button>
+            <div id="previewGpkd" class="hidden mt-2 rounded-xl overflow-hidden relative border border-gray-200">
+              <img src="" class="w-full h-40 object-cover">
+              <button onclick="removeImage('gpkd')" class="absolute top-2 right-2 bg-red-500 text-white w-8 h-8 rounded-full shadow-md">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chụp ảnh CCCD -->
+        <div>
+          <p class="text-sm font-semibold text-gray-600 mb-2">Căn cước công dân *</p>
+          <div class="relative group">
+            <button onclick="triggerCamera('cccd')" id="btnCccd"
+              class="w-full border-2 border-dashed border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-600 py-6 px-4 rounded-2xl transition-all flex flex-col items-center gap-2">
+              <i class="fas fa-id-card text-2xl"></i>
+              <span>CAN_CUOC_CONG_DAN</span>
+            </button>
+            <div id="previewCccd" class="hidden mt-2 rounded-xl overflow-hidden relative border border-gray-200">
+              <img src="" class="w-full h-40 object-cover">
+              <button onclick="removeImage('cccd')" class="absolute top-2 right-2 bg-red-500 text-white w-8 h-8 rounded-full shadow-md">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Nút Submit -->
+        <button id="btnSubmit" onclick="submitData()"
+          class="hidden w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-2xl shadow-xl transition-all active:scale-95">
+          KẾT THÚC
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div id="loading" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex flex-col items-center justify-center text-white">
+    <div class="loader mb-4"></div>
+    <p class="text-lg font-medium">Đang xử lý dữ liệu & OCR...</p>
+    <p class="text-xs text-gray-300 mt-2 italic">Vui lòng không đóng cửa sổ</p>
+  </div>
+
+  <!-- Input File Ẩn (Dùng chung cho camera) -->
+  <input type="file" id="fileInput" accept="image/*" capture="environment" class="hidden">
+
+  <script>
+    let images = { gpkd: null, cccd: null };
+    let activeType = null;
+    let dmsCodeConfirmed = "";
+
+    function showScreen(id) {
+      document.getElementById('screen1').classList.add('hidden');
+      document.getElementById('screen2').classList.add('hidden');
+      document.getElementById(id).classList.remove('hidden');
+    }
+
+    function toggleLoading(show) {
+      document.getElementById('loading').classList.toggle('hidden', !show);
+    }
+
+    // Xử lý Auth DMS
+    async function handleDmsAuth() {
+      const code = document.getElementById('dmsCode').value.trim();
+      if(!code) return alert("Vui lòng nhập mã DMS!");
+      
+      toggleLoading(true);
+      
+      google.script.run
+        .withSuccessHandler(() => {
+          dmsCodeConfirmed = code;
+          toggleLoading(false);
+          showScreen('screen2');
+        })
+        .withFailureHandler((err) => {
+          toggleLoading(false);
+          alert(err.message);
+        })
+        .validateDMS(code);
+    }
+
+    function triggerCamera(type) {
+      activeType = type;
+      document.getElementById('fileInput').click();
+    }
+
+    document.getElementById('fileInput').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if(!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        const base64 = event.target.result;
+        images[activeType] = base64;
+        
+        // Show preview
+        const previewId = activeType === 'gpkd' ? 'previewGpkd' : 'previewCccd';
+        const layer = document.getElementById(previewId);
+        layer.querySelector('img').src = base64;
+        layer.classList.remove('hidden');
+        document.getElementById(activeType === 'gpkd' ? 'btnGpkd' : 'btnCccd').classList.add('hidden');
+        
+        checkReady();
+      };
+      reader.readAsDataURL(file);
+      e.target.value = ''; // Reset input
+    });
+
+    function removeImage(type) {
+      images[type] = null;
+      document.getElementById(type === 'gpkd' ? 'previewGpkd' : 'previewCccd').classList.add('hidden');
+      document.getElementById(type === 'gpkd' ? 'btnGpkd' : 'btnCccd').classList.remove('hidden');
+      checkReady();
+    }
+
+    function checkReady() {
+      const empId = document.getElementById('empId').value.trim();
+      const isReady = empId && images.gpkd && images.cccd;
+      document.getElementById('btnSubmit').classList.toggle('hidden', !isReady);
+    }
+
+    document.getElementById('empId').addEventListener('input', checkReady);
+
+    async function submitData() {
+      toggleLoading(true);
+      const data = {
+        dmsCode: dmsCodeConfirmed,
+        employeeId: document.getElementById('empId').value,
+        gpkdBase64: images.gpkd,
+        cccdBase64: images.cccd
+      };
+
+      google.script.run
+        .withSuccessHandler((res) => {
+          toggleLoading(false);
+          alert(res.message);
+          window.location.reload(); 
+        })
+        .withFailureHandler((err) => {
+          toggleLoading(false);
+          alert("Lỗi: " + err.message);
+        })
+        .processSubmission(data);
+    }
+  </script>
+</body>
+</html>

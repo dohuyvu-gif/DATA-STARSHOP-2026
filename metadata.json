@@ -1,0 +1,8 @@
+{
+  "name": "DMS Field Data Pro",
+  "description": "Hệ thống thu thập dữ liệu hiện trường (GPKD & CCCD) với tích hợp OCR và lưu trữ Google Sheets/Drive.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": []
+}
