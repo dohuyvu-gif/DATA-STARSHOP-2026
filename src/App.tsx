@@ -1,3 +1,6 @@
+import { useState } from "react";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "./firebase";
 import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { 
@@ -28,6 +31,36 @@ interface ImageData {
 }
 
 export default function App() {
+  const [dmsCode, setDmsCode] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleTiepTuc = async () => {
+    if (!dmsCode.trim()) {
+      setErrorMsg("Vui lòng nhập mã DMS cửa hàng!");
+      return;
+    }
+    setIsLoading(true);
+    setErrorMsg(""); // Xóa thông báo lỗi cũ
+
+    try {
+      const codeToCheck = dmsCode.trim().toUpperCase();
+      const docRef = doc(db, "DMS_Codes", codeToCheck);
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        alert(`Thành công! Mã ${codeToCheck} hợp lệ.`); 
+        // Sau này anh ráp lệnh chuyển sang Bước 2 ở dòng này
+      } else {
+        setErrorMsg(`Từ chối: Mã "${codeToCheck}" không tồn tại.`);
+      }
+    } catch (error) {
+      console.error(error);
+      setErrorMsg("Lỗi kết nối. Vui lòng thử lại.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
   const [screen, setScreen] = useState<Screen>("auth");
   const [dmsCode, setDmsCode] = useState("");
   const [suggestions, setSuggestions] = useState<{code: string, name: string}[]>([]);
@@ -321,7 +354,7 @@ export default function App() {
                         <input
                           type="text"
                           value={dmsCode}
-                          onChange={(e) => onDmsInputChange(e.target.value)}
+                          onChange={(e) => setDmsCode(e.target.value)}
                           placeholder="Nhập mã DMS (VD: HCM, HN...)"
                           className={`w-full px-5 py-4 bg-slate-50 border rounded-2xl focus:ring-4 outline-none transition-all font-bold text-lg placeholder:text-slate-300 ${
                             isDmsVerified 
@@ -329,12 +362,18 @@ export default function App() {
                               : "border-slate-200 focus:ring-indigo-100 focus:border-indigo-500"
                           }`}
                           autoFocus
+                        
                         />
                         {isDmsVerified && (
                           <div className="absolute right-4 top-1/2 -translate-y-1/2 text-emerald-500">
                             <CheckCircle2 size={24} />
                           </div>
                         )}
+                        {errorMsg && (
+      <p style={{ color: "#ff4d4f", fontSize: "14px", marginTop: "8px", fontWeight: "bold", position: "absolute", bottom: "-25px" }}>
+        {errorMsg}
+      </p>
+    )}
                       </div>
 
                       {/* Suggestions Dropdown */}
@@ -380,11 +419,11 @@ export default function App() {
                     )}
 
                     <button
-                      onClick={handleAuth}
-                      disabled={loading || !isDmsVerified}
+                      onClick={handleTiepTuc}
+                      disabled={isLoading}
                       className="w-full h-18 bg-slate-900 disabled:bg-slate-200 hover:bg-slate-800 text-white rounded-2xl font-bold uppercase tracking-widest text-sm shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-4"
                     >
-                      {loading ? <Loader2 className="animate-spin" /> : <>Tiếp tục <ArrowRight size={18} /></>}
+                      {isLoading ? <Loader2 className="animate-spin" /> : <>Tiếp tục <ArrowRight size={18} /></>}
                     </button>
                   </div>
                 </motion.div>
