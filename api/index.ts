@@ -40,12 +40,12 @@ const getAuthClient = () => {
     throw new Error("LỖI ĐỊNH DẠNG: GOOGLE_PRIVATE_KEY phải dán toàn bộ nội dung trong file JSON (bắt đầu bằng '-----BEGIN PRIVATE KEY-----').");
   }
 
-  return new google.auth.JWT(
-    email,
-    null,
-    key,
-    ['https://www.googleapis.com/auth/drive', 'https://www.googleapis.com/auth/spreadsheets']
-  );
+  const auth = new google.auth.JWT();
+  auth.email = email;
+  auth.key = key;
+  auth.scopes = ['https://www.googleapis.com/auth/drive', 'https://www.googleapis.com/auth/spreadsheets'];
+  
+  return auth;
 };
 
 // Helper: Save Base64 to Drive
