@@ -11,7 +11,8 @@ import {
   Trash2,
   AlertCircle,
   FileSpreadsheet,
-  Lock
+  Lock,
+  ImagePlus
 } from "lucide-react";
 import confetti from "canvas-confetti";
 import { GoogleGenAI } from "@google/genai";
@@ -47,6 +48,7 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
   const excelInputRef = useRef<HTMLInputElement>(null);
   const [activePhotoType, setActivePhotoType] = useState<keyof ImageData | null>(null);
   const [showPasswordPrompt, setShowPasswordPrompt] = useState(false);
@@ -152,6 +154,11 @@ export default function App() {
   const triggerCamera = (type: keyof ImageData) => {
     setActivePhotoType(type);
     fileInputRef.current?.click();
+  };
+
+  const triggerGallery = (type: keyof ImageData) => {
+    setActivePhotoType(type);
+    galleryInputRef.current?.click();
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -275,6 +282,13 @@ export default function App() {
         className="hidden" 
         accept="image/*" 
         capture="environment" 
+        onChange={handleFileChange}
+      />
+      <input 
+        type="file" 
+        ref={galleryInputRef} 
+        className="hidden" 
+        accept="image/*" 
         onChange={handleFileChange}
       />
 
@@ -477,14 +491,22 @@ export default function App() {
                         <h3 className="font-black text-sm uppercase tracking-widest mb-1 text-slate-900">GIẤY PHÉP KINH DOANH</h3>
                         <p className="text-[11px] text-slate-400 leading-relaxed mb-6 px-4">Chụp ảnh bản gốc rõ nét, đầy đủ thông tin pháp lý</p>
                         
-                        <div className={`w-full h-48 rounded-2xl border-2 border-dashed relative flex items-center justify-center overflow-hidden transition-all ${images.gpkd ? "border-indigo-400 bg-white" : "border-slate-200 bg-slate-50"}`}>
+                        <div className={`w-full h-48 rounded-2xl border-2 border-dashed relative flex flex-col items-center justify-center gap-3 overflow-hidden transition-all ${images.gpkd ? "border-indigo-400 bg-white" : "border-slate-200 bg-slate-50"}`}>
                           {!images.gpkd ? (
-                            <button 
-                              onClick={() => triggerCamera("gpkd")}
-                              className="text-indigo-600 font-bold uppercase text-[10px] tracking-widest bg-white px-6 py-3 rounded-full shadow-md border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all transform hover:-translate-y-1"
-                            >
-                              Chụp ảnh ngay
-                            </button>
+                            <>
+                              <button 
+                                onClick={() => triggerCamera("gpkd")}
+                                className="flex items-center gap-2 text-indigo-600 font-bold uppercase text-[10px] tracking-widest bg-white px-6 py-2.5 rounded-full shadow-sm border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all transform hover:-translate-y-1"
+                              >
+                                <Camera size={14} /> Chụp ảnh
+                              </button>
+                              <button 
+                                onClick={() => triggerGallery("gpkd")}
+                                className="flex items-center gap-2 text-slate-600 font-bold uppercase text-[10px] tracking-widest bg-white px-6 py-2.5 rounded-full shadow-sm border border-slate-200 hover:bg-slate-800 hover:text-white transition-all transform hover:-translate-y-1"
+                              >
+                                <ImagePlus size={14} /> Thư viện
+                              </button>
+                            </>
                           ) : (
                             <>
                               <img src={images.gpkd} className="w-full h-full object-cover" />
@@ -511,14 +533,22 @@ export default function App() {
                         <h3 className="font-black text-sm uppercase tracking-widest mb-1 text-slate-900">CĂN CƯỚC CÔNG DÂN</h3>
                         <p className="text-[11px] text-slate-400 leading-relaxed mb-6 px-4">Ảnh mặt trước căn cước chính chủ, không bị lóa</p>
                         
-                        <div className={`w-full h-48 rounded-2xl border-2 border-dashed relative flex items-center justify-center overflow-hidden transition-all ${images.cccd ? "border-indigo-400 bg-white" : "border-slate-200 bg-slate-50"}`}>
+                        <div className={`w-full h-48 rounded-2xl border-2 border-dashed relative flex flex-col items-center justify-center gap-3 overflow-hidden transition-all ${images.cccd ? "border-indigo-400 bg-white" : "border-slate-200 bg-slate-50"}`}>
                           {!images.cccd ? (
-                            <button 
-                              onClick={() => triggerCamera("cccd")}
-                              className="text-indigo-600 font-bold uppercase text-[10px] tracking-widest bg-white px-6 py-3 rounded-full shadow-md border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all transform hover:-translate-y-1"
-                            >
-                              Chụp ảnh ngay
-                            </button>
+                            <>
+                              <button 
+                                onClick={() => triggerCamera("cccd")}
+                                className="flex items-center gap-2 text-indigo-600 font-bold uppercase text-[10px] tracking-widest bg-white px-6 py-2.5 rounded-full shadow-sm border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all transform hover:-translate-y-1"
+                              >
+                                <Camera size={14} /> Chụp ảnh
+                              </button>
+                              <button 
+                                onClick={() => triggerGallery("cccd")}
+                                className="flex items-center gap-2 text-slate-600 font-bold uppercase text-[10px] tracking-widest bg-white px-6 py-2.5 rounded-full shadow-sm border border-slate-200 hover:bg-slate-800 hover:text-white transition-all transform hover:-translate-y-1"
+                              >
+                                <ImagePlus size={14} /> Thư viện
+                              </button>
+                            </>
                           ) : (
                             <>
                               <img src={images.cccd} className="w-full h-full object-cover" />
