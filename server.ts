@@ -28,11 +28,20 @@ let IN_MEMORY_DMS_CODES: string[] = [];
 
 // ... Các API sẽ được định nghĩa trên "app" thay vì trong "startServer"
 const app = express();
-app.use(express.json({ limit: '50mb' }));
+// Vercel serverless functions already parse req.body automatically.
+// Running express.json() might hang if the stream is already consumed.
+app.use((req, res, next) => {
+  if (process.env.VERCEL === '1') {
+    // Vercel handles body parsing internally
+    return next();
+  }
+  express.json({ limit: '50mb' })(req, res, next);
+});
 
 // API: Import DMS Codes
 app.post("/api/import-dms", async (req, res) => {
-  const { codes, password } = req.body;
+  const codes = req.body?.codes;
+  const password = req.body?.password;
   
   if (password !== "03042000") {
     return res.status(401).json({ success: false, message: "Mật khẩu không đúng!" });
@@ -67,7 +76,7 @@ app.post("/api/import-dms", async (req, res) => {
 
 // API: Validate DMS Code
 app.post("/api/validate-dms", async (req, res) => {
-  const { dmsCode } = req.body;
+  const dmsCode = req.body?.dmsCode;
   
   if (!dmsCode) {
     return res.status(400).json({ success: false, message: "Vui lòng nhập Mã DMS." });
@@ -97,18 +106,17 @@ app.post("/api/validate-dms", async (req, res) => {
       }
       return res.status(400).json({ success: false, message: "Mã DMS không hợp lệ ! Mã này không có trong danh sách." });
     }
-  } catch(err) {
-    // Typically `single()` throws error if 0 rows are found
-    if (IN_MEMORY_DMS_CODES.includes(dmsCode.trim())) {
+  } catch(err: any) {
+    if (dmsCode && IN_MEMORY_DMS_CODES.includes(String(dmsCode).trim())) {
        return res.json({ success: true });
     }
-    return res.status(400).json({ success: false, message: "Mã DMS không hợp lệ ! Mã này không có trong danh sách." });
+    return res.status(500).json({ success: false, message: "Lỗi kết nối máy chủ xác thực." });
   }
 });
 
 // API: Process Submission
 app.post("/api/submit", async (req, res) => {
-  const { dmsCode, employeeId, gpkdBase64, cccdBase64, ocrData } = req.body;
+  const { dmsCode, employeeId, gpkdBase64, cccdBase64, ocrData } = req.body || {};
   
   console.log(`Saving submission for DMS: ${dmsCode}, Emp: ${employeeId}`);
   

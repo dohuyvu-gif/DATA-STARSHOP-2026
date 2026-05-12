@@ -127,16 +127,22 @@ export default function App() {
       const res = await fetch("/api/validate-dms", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dmsCode }),
+        body: JSON.stringify({ dmsCode: String(dmsCode) }), // Ensure string
       });
-      const data = await res.json();
+      let data;
+      try {
+        data = await res.json();
+      } catch (parseErr) {
+        throw new Error(`Mã lỗi máy chủ: ${res.status}. Vui lòng thử lại.`);
+      }
+      
       if (data.success) {
         setScreen("collect");
       } else {
         setError(data.message);
       }
-    } catch (err) {
-      setError("Không thể kết nối đến máy chủ.");
+    } catch (err: any) {
+      setError(err.message || "Không thể kết nối đến máy chủ.");
     } finally {
       setLoading(false);
     }
