@@ -16,21 +16,29 @@ const getAuthClient = () => {
   const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
   let key = process.env.GOOGLE_PRIVATE_KEY;
 
-  console.log("[Auth Check] Email exists:", !!email, "| Key exists:", !!key);
-
   if (!email || !key) {
     const missing = [];
     if (!email) missing.push("GOOGLE_SERVICE_ACCOUNT_EMAIL");
     if (!key) missing.push("GOOGLE_PRIVATE_KEY");
-    throw new Error(`Thiếu biến môi trường trong Secrets: ${missing.join(", ")}. Vui lòng kiểm tra lại mục Settings > Secrets.`);
+    
+    // Thông báo lỗi chi tiết hơn tùy vào môi trường
+    const envSource = process.env.VERCEL ? "Vercel Project Settings > Environment Variables" : "AI Studio > Settings > Secrets";
+    throw new Error(`THIẾU BIẾN: [${missing.join(", ")}]. Hãy đảm bảo bạn đã cấu hình chúng trong ${envSource} và nhấn SAVE.`);
   }
 
-  // Kiểm tra định dạng key
-  if (!key.includes("BEGIN PRIVATE KEY")) {
-    throw new Error("GOOGLE_PRIVATE_KEY không đúng định dạng. Bạn phải dán toàn bộ nội dung trong file JSON (bắt đầu bằng -----BEGIN PRIVATE KEY-----), không phải mã ID ngắn.");
+  // Làm sạch key: xóa khoảng trắng, dấu ngoặc kép thừa
+  key = key.trim();
+  if (key.startsWith('"') && key.endsWith('"')) {
+    key = key.substring(1, key.length - 1);
   }
 
+  // Xử lý ký tự \n dính liền (thường thấy khi copy từ file JSON)
   key = key.replace(/\\n/g, '\n');
+
+  // Kiểm tra định dạng cuối cùng
+  if (!key.includes("BEGIN PRIVATE KEY")) {
+    throw new Error("LỖI ĐỊNH DẠNG: GOOGLE_PRIVATE_KEY phải dán toàn bộ nội dung trong file JSON (bắt đầu bằng '-----BEGIN PRIVATE KEY-----').");
+  }
 
   return new google.auth.JWT(
     email,
