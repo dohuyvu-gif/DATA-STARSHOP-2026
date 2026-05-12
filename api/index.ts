@@ -14,11 +14,18 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 // Helper: Get Google Auth Client
 const getAuthClient = () => {
   const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-  const key = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+  let key = process.env.GOOGLE_PRIVATE_KEY;
 
   if (!email || !key) {
-    throw new Error("Missing Google Service Account credentials (EMAIL or PRIVATE_KEY).");
+    throw new Error("Thiếu biến môi trường: Vui lòng cấu hình GOOGLE_SERVICE_ACCOUNT_EMAIL và GOOGLE_PRIVATE_KEY trong mục Secrets.");
   }
+
+  // Kiểm tra định dạng key
+  if (!key.includes("BEGIN PRIVATE KEY")) {
+    throw new Error("Định dạng GOOGLE_PRIVATE_KEY không hợp lệ. Bạn đang dán mã ID thay vì nôi dung Private Key (phải bắt đầu bằng -----BEGIN PRIVATE KEY-----).");
+  }
+
+  key = key.replace(/\\n/g, '\n');
 
   return new google.auth.JWT(
     email,
