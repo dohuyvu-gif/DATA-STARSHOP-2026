@@ -83,12 +83,15 @@ export default function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ dmsCode, employeeId: empId, gpkdBase64: images.gpkd, cccdBase64: images.cccd }),
       });
+      const data = await res.json();
       if (res.ok) {
         setScreen("success");
         confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+      } else {
+        setError(data.message || "Lỗi xử lý dữ liệu hiện trường.");
       }
     } catch (err) {
-      setError("Lỗi xử lý dữ liệu hiện trường.");
+      setError("Không thể kết nối đến máy chủ.");
     } finally {
       setLoading(false);
     }
@@ -277,7 +280,12 @@ export default function App() {
                    </div>
                 </div>
 
-                <div className="p-8 bg-white border-t border-slate-100">
+                <div className="p-8 bg-white border-t border-slate-100 space-y-4">
+                  {error && (
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3 p-5 bg-red-50 text-red-600 rounded-2xl text-sm font-bold border border-red-100">
+                      <AlertCircle size={20} className="shrink-0" /> {error}
+                    </motion.div>
+                  )}
                   <button
                     onClick={handleSubmit}
                     disabled={!empId.trim() || !images.gpkd || !images.cccd || loading}
