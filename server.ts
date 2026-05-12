@@ -28,14 +28,24 @@ let IN_MEMORY_DMS_CODES: string[] = [];
 
 // ... Các API sẽ được định nghĩa trên "app" thay vì trong "startServer"
 const app = express();
-// Vercel serverless functions already parse req.body automatically.
-// Running express.json() might hang if the stream is already consumed.
 app.use((req, res, next) => {
-  if (process.env.VERCEL === '1') {
-    // Vercel handles body parsing internally
-    return next();
+  // Try using express.json directly, it's generally safe
+  express.json({ limit: '50mb' })(req, res, (err) => {
+    if (err) return next(err);
+    next();
+  });
+});
+
+// Middleware to ensure req.body is parsed if vercel passed it as a string
+app.use((req, res, next) => {
+  if (req.body && typeof req.body === 'string') {
+    try {
+      req.body = JSON.parse(req.body);
+    } catch (e) {
+      console.error("Failed to parse string body", e);
+    }
   }
-  express.json({ limit: '50mb' })(req, res, next);
+  next();
 });
 
 // API: Import DMS Codes
@@ -76,6 +86,7 @@ app.post("/api/import-dms", async (req, res) => {
 
 // API: Validate DMS Code
 app.post("/api/validate-dms", async (req, res) => {
+  console.log("Vercel received body for validation:", req.body);
   const dmsCode = req.body?.dmsCode;
   
   if (!dmsCode) {
