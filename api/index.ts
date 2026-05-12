@@ -16,13 +16,18 @@ const getAuthClient = () => {
   const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
   let key = process.env.GOOGLE_PRIVATE_KEY;
 
+  console.log("[Auth Check] Email exists:", !!email, "| Key exists:", !!key);
+
   if (!email || !key) {
-    throw new Error("Thiếu biến môi trường: Vui lòng cấu hình GOOGLE_SERVICE_ACCOUNT_EMAIL và GOOGLE_PRIVATE_KEY trong mục Secrets.");
+    const missing = [];
+    if (!email) missing.push("GOOGLE_SERVICE_ACCOUNT_EMAIL");
+    if (!key) missing.push("GOOGLE_PRIVATE_KEY");
+    throw new Error(`Thiếu biến môi trường trong Secrets: ${missing.join(", ")}. Vui lòng kiểm tra lại mục Settings > Secrets.`);
   }
 
   // Kiểm tra định dạng key
   if (!key.includes("BEGIN PRIVATE KEY")) {
-    throw new Error("Định dạng GOOGLE_PRIVATE_KEY không hợp lệ. Bạn đang dán mã ID thay vì nôi dung Private Key (phải bắt đầu bằng -----BEGIN PRIVATE KEY-----).");
+    throw new Error("GOOGLE_PRIVATE_KEY không đúng định dạng. Bạn phải dán toàn bộ nội dung trong file JSON (bắt đầu bằng -----BEGIN PRIVATE KEY-----), không phải mã ID ngắn.");
   }
 
   key = key.replace(/\\n/g, '\n');
