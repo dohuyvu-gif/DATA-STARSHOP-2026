@@ -161,14 +161,46 @@ export default function App() {
     galleryInputRef.current?.click();
   };
 
+  const compressImage = (base64Str: string, maxWidth = 1600, quality = 0.8): Promise<string> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.src = base64Str;
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx?.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+    });
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !activePhotoType) return;
 
+    setLoading(true); // Optional: show loading while compressing
+
     const reader = new FileReader();
-    reader.onload = (event) => {
-      const base64 = event.target?.result as string;
-      setImages(prev => ({ ...prev, [activePhotoType]: base64 }));
+    reader.onload = async (event) => {
+      try {
+        const rawBase64 = event.target?.result as string;
+        const compressedBase64 = await compressImage(rawBase64, 1600, 0.7);
+        setImages(prev => ({ ...prev, [activePhotoType]: compressedBase64 }));
+      } catch (err) {
+        console.error("Lỗi khi nén ảnh", err);
+      } finally {
+        setLoading(false);
+      }
     };
     reader.readAsDataURL(file);
     e.target.value = ""; // Clear for next click
